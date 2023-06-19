@@ -245,10 +245,6 @@
 #    properties.
 #   Defaults to undef
 #
-# [*os_region_name*]
-#   (optional) Sets the keystone region to use.
-#   Defaults to undef
-#
 # [*keymgr_backend*]
 #   (optional) Key Manager service class.
 #   Example of valid value: castellan.key_manager.barbican_key_manager.BarbicanKeyManager
@@ -301,13 +297,13 @@ class glance::api(
   $workers                              = $::os_workers,
   $delayed_delete                       = $::os_service_default,
   $auth_strategy                        = 'keystone',
-  $pipeline                             = 'keystone',
-  $manage_service                       = true,
-  $enabled                              = true,
-  $show_image_direct_url                = $::os_service_default,
-  $filesystem_store_metadata_file       = $::os_service_default,
-  $filesystem_store_file_perm           = $::os_service_default,
-  $location_strategy                    = $::os_service_default,
+  String $paste_deploy_flavor           = 'keystone',
+  $paste_deploy_config_file             = $facts['os_service_default'],
+  Boolean $manage_service               = true,
+  Boolean $enabled                      = true,
+  $service_name                         = $::glance::params::api_service_name,
+  $show_image_direct_url                = $facts['os_service_default'],
+  $location_strategy                    = $facts['os_service_default'],
   $purge_config                         = false,
   $enforce_secure_rbac                  = $::os_service_default,
   $use_keystone_limits                  = $::os_service_default,
@@ -319,56 +315,48 @@ class glance::api(
   $image_cache_max_size                 = $::os_service_default,
   $image_cache_stall_time               = $::os_service_default,
   $image_cache_dir                      = '/var/lib/glance/image-cache',
-  $image_import_plugins                 = $::os_service_default,
-  $inject_metadata_properties           = $::os_service_default,
-  $ignore_user_roles                    = $::os_service_default,
-  $image_conversion_output_format       = $::os_service_default,
-  $enabled_import_methods               = $::os_service_default,
-  $node_staging_uri                     = $::os_service_default,
-  $worker_self_reference_url            = $::os_service_default,
-  $image_member_quota                   = $::os_service_default,
-  $image_property_quota                 = $::os_service_default,
-  $image_tag_quota                      = $::os_service_default,
-  $image_location_quota                 = $::os_service_default,
-  $image_size_cap                       = $::os_service_default,
-  $user_storage_quota                   = $::os_service_default,
-  $task_time_to_live                    = $::os_service_default,
-  $task_executor                        = $::os_service_default,
-  $task_work_dir                        = $::os_service_default,
-  $taskflow_engine_mode                 = $::os_service_default,
-  $taskflow_max_workers                 = $::os_service_default,
-  $conversion_format                    = $::os_service_default,
-  $enable_proxy_headers_parsing         = $::os_service_default,
-  $max_request_body_size                = $::os_service_default,
-  $sync_db                              = true,
-  $limit_param_default                  = $::os_service_default,
-  $api_limit_max                        = $::os_service_default,
+  $image_import_plugins                 = $facts['os_service_default'],
+  $inject_metadata_properties           = $facts['os_service_default'],
+  $ignore_user_roles                    = $facts['os_service_default'],
+  $image_conversion_output_format       = $facts['os_service_default'],
+  $enabled_import_methods               = $facts['os_service_default'],
+  $node_staging_uri                     = $facts['os_service_default'],
+  $worker_self_reference_url            = $facts['os_service_default'],
+  $image_member_quota                   = $facts['os_service_default'],
+  $image_property_quota                 = $facts['os_service_default'],
+  $image_tag_quota                      = $facts['os_service_default'],
+  $image_location_quota                 = $facts['os_service_default'],
+  $image_size_cap                       = $facts['os_service_default'],
+  $user_storage_quota                   = $facts['os_service_default'],
+  $task_time_to_live                    = $facts['os_service_default'],
+  $task_executor                        = $facts['os_service_default'],
+  $task_work_dir                        = $facts['os_service_default'],
+  $taskflow_engine_mode                 = $facts['os_service_default'],
+  $taskflow_max_workers                 = $facts['os_service_default'],
+  $conversion_format                    = $facts['os_service_default'],
+  $enable_proxy_headers_parsing         = $facts['os_service_default'],
+  $max_request_body_size                = $facts['os_service_default'],
+  Boolean $sync_db                      = true,
+  $limit_param_default                  = $facts['os_service_default'],
+  $api_limit_max                        = $facts['os_service_default'],
   $lock_path                            = $::glance::params::lock_path,
   # DEPRECATED PARAMETERS
   $stores                               = undef,
   $default_store                        = undef,
-  $multi_store                          = false,
+  Boolean $multi_store                  = false,
   $show_multiple_locations              = undef,
-  $os_region_name                       = undef,
   $keymgr_backend                       = undef,
   $keymgr_encryption_api_url            = undef,
   $keymgr_encryption_auth_url           = undef,
-  $validate                             = undef,
-  $validation_options                   = undef,
-  $scrub_time                           = undef,
-  $cert_file                            = undef,
-  $key_file                             = undef,
-  $ca_file                              = undef,
+  $filesystem_store_metadata_file       = undef,
+  $filesystem_store_file_perm           = undef,
+  Optional[String] $pipeline            = undef,
 ) inherits glance {
 
   include glance::deps
   include glance::policy
   include glance::api::db
 
-  if $os_region_name != undef {
-    warning('glance::api::os_region_name is deprecated. Use \
-glance::backend::multistore::cinder::cinder_os_region_name instead.')
-  }
 
   if $validate != undef {
     warning('The glance::api::validate parameter has been deprecated and has no effect')
@@ -570,14 +558,19 @@ enabled_backends instead.')
     'inject_metadata_properties/ignore_user_roles': value => $ignore_user_roles;
   }
 
-  # Set the pipeline, it is allowed to be blank
-  if $pipeline != '' {
-    validate_legacy(Pattern[/^(\w+([+]\w+)*)*$/], 'validate_re', $pipeline, ['^(\w+([+]\w+)*)*$'])
+  if $pipeline != undef {
+    warning('The pipeline parameter has been deprecated. Use the paste_deploy_flavor parmaeter instead.')
+    $paste_deploy_flavor_real = $pipeline
+  } else {
+    $paste_deploy_flavor_real = $paste_deploy_flavor
+  }
 
+  # Set the flavor, it is allowed to be blank
+  if $paste_deploy_flavor_real != '' {
     glance_api_config {
       'paste_deploy/flavor':
         ensure => present,
-        value  => $pipeline,
+        value  => $paste_deploy_flavor_real,
     }
   } else {
     glance_api_config { 'paste_deploy/flavor': ensure => absent }

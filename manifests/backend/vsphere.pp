@@ -86,9 +86,9 @@ class glance::backend::vsphere(
   $vcenter_ca_file            = $::os_service_default,
   $vcenter_datastores         = $::os_service_default,
   $vcenter_insecure           = 'True',
-  $vcenter_task_poll_interval = $::os_service_default,
-  $vcenter_api_retry_count    = $::os_service_default,
-  $multi_store                = false,
+  $vcenter_task_poll_interval = $facts['os_service_default'],
+  $vcenter_api_retry_count    = $facts['os_service_default'],
+  Boolean $multi_store        = false,
 ) {
 
   include glance::deps

@@ -19,8 +19,8 @@
 #
 class glance::backend::file(
   $filesystem_store_datadir     = '/var/lib/glance/images/',
-  $filesystem_thin_provisioning = $::os_service_default,
-  $multi_store                  = false,
+  $filesystem_thin_provisioning = $facts['os_service_default'],
+  Boolean $multi_store          = false,
 ) {
 
   include glance::deps

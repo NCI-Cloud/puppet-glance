@@ -82,7 +82,7 @@ class glance::backend::cinder(
   $cinder_store_user_name      = $::os_service_default,
   $cinder_store_password       = $::os_service_default,
   $cinder_os_region_name       = 'RegionOne',
-  $multi_store                 = false,
+  Boolean $multi_store         = false,
 ) {
 
   include glance::deps

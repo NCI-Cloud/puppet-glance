@@ -70,7 +70,7 @@ class glance::backend::swift(
   $swift_store_endpoint_type           = 'internalURL',
   $swift_store_region                  = $::os_service_default,
   $default_swift_reference             = 'ref1',
-  $multi_store                         = false,
+  Boolean $multi_store                 = false,
 ) {
 
   include glance::deps
