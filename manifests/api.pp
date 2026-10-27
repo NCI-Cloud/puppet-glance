@@ -348,8 +348,8 @@ class glance::api(
   $keymgr_backend                       = undef,
   $keymgr_encryption_api_url            = undef,
   $keymgr_encryption_auth_url           = undef,
-  $filesystem_store_metadata_file       = undef,
-  $filesystem_store_file_perm           = undef,
+  $filesystem_store_metadata_file       = $facts['os_service_default'],
+  $filesystem_store_file_perm           = $facts['os_service_default'],
   Optional[String] $pipeline            = undef,
 ) inherits glance {
 
