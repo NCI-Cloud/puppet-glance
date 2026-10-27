@@ -291,11 +291,11 @@
 #
 class glance::api(
   $package_ensure                       = 'present',
-  $bind_host                            = $::os_service_default,
+  $bind_host                            = $facts['os_service_default'],
   $bind_port                            = '9292',
-  $backlog                              = $::os_service_default,
-  $workers                              = $::os_workers,
-  $delayed_delete                       = $::os_service_default,
+  $backlog                              = $facts['os_service_default'],
+  $workers                              = $facts['os_workers'],
+  $delayed_delete                       = $facts['os_service_default'],
   $auth_strategy                        = 'keystone',
   String $paste_deploy_flavor           = 'keystone',
   $paste_deploy_config_file             = $facts['os_service_default'],
@@ -305,15 +305,15 @@ class glance::api(
   $show_image_direct_url                = $facts['os_service_default'],
   $location_strategy                    = $facts['os_service_default'],
   $purge_config                         = false,
-  $enforce_secure_rbac                  = $::os_service_default,
-  $use_keystone_limits                  = $::os_service_default,
+  $enforce_secure_rbac                  = $facts['os_service_default'],
+  $use_keystone_limits                  = $facts['os_service_default'],
   $enabled_backends                     = undef,
   $default_backend                      = undef,
-  $container_formats                    = $::os_service_default,
-  $disk_formats                         = $::os_service_default,
-  $cache_prefetcher_interval            = $::os_service_default,
-  $image_cache_max_size                 = $::os_service_default,
-  $image_cache_stall_time               = $::os_service_default,
+  $container_formats                    = $facts['os_service_default'],
+  $disk_formats                         = $facts['os_service_default'],
+  $cache_prefetcher_interval            = $facts['os_service_default'],
+  $image_cache_max_size                 = $facts['os_service_default'],
+  $image_cache_stall_time               = $facts['os_service_default'],
   $image_cache_dir                      = '/var/lib/glance/image-cache',
   $image_import_plugins                 = $facts['os_service_default'],
   $inject_metadata_properties           = $facts['os_service_default'],
@@ -357,18 +357,6 @@ class glance::api(
   include glance::policy
   include glance::api::db
 
-
-  if $validate != undef {
-    warning('The glance::api::validate parameter has been deprecated and has no effect')
-  }
-
-  if $validation_options != undef {
-    warning('The glance::api::validation_options parameter has been deprecated and has no effect')
-  }
-
-  if $scrub_time != undef {
-    warning('The glance::scrub_time parameter is deprerecated and has no effect')
-  }
   glance_api_config {
     'DEFAULT/scrub_time': ensure => absent;
   }
@@ -392,7 +380,7 @@ class glance::api(
     }
   }
 
-  if $enabled_import_methods != $::os_service_default {
+  if $enabled_import_methods != $facts['os_service_default'] {
     # This option is a ListOpt that requires explicit brackets.
     $enabled_import_methods_real = sprintf('[%s]', join(any2array($enabled_import_methods), ','))
   } else {
@@ -431,7 +419,7 @@ class glance::api(
     warning('The show_multiple_locations parameter is deprecated, and will be removed in a future release')
   }
   glance_api_config {
-    'DEFAULT/show_multiple_locations': value => pick($show_multiple_locations, $::os_service_default)
+    'DEFAULT/show_multiple_locations': value => pick($show_multiple_locations, $facts['os_service_default'])
   }
 
   # task/taskflow_executor config.
@@ -470,8 +458,8 @@ class glance::api(
     }
 
     glance_api_config {
-      'DEFAULT/enabled_backends':     value  => join($enabled_backends_array, ',');
-      'glance_store/default_backend': value  => $default_backend;
+      'DEFAULT/enabled_backends':     value => join($enabled_backends_array, ',');
+      'glance_store/default_backend': value => $default_backend;
       'glance_store/stores':          ensure => absent;
       'glance_store/default_store':   ensure => absent;
     }
@@ -545,7 +533,7 @@ enabled_backends instead.')
     'DEFAULT/image_cache_max_size':   value => $image_cache_max_size;
   }
 
-  if $image_import_plugins != $::os_service_default {
+  if $image_import_plugins != $facts['os_service_default'] {
     $image_import_plugins_real = sprintf('[%s]', join(any2array($image_import_plugins), ','))
   } else {
     $image_import_plugins_real = $image_import_plugins
@@ -596,7 +584,7 @@ enabled_backends instead.')
   }
 
   ['keymgr_encryption_api_url', 'keymgr_encryption_auth_url'].each |String $barbican_opt| {
-    if getvar("${barbican_opt}") != undef {
+    if getvar($barbican_opt) != undef {
       warning("The ${barbican_opt} parameter is deprecated. Use the glance::key_manager::barbican class")
     }
     include glance::key_manager::barbican
